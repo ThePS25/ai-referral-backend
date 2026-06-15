@@ -1,9 +1,10 @@
 import { Referral } from '../models/Referral';
 import { generateReferralContent } from './geminiService';
 import { extractTextFromPdf, deleteFile } from '../utils/pdfParser';
-import { GenerateReferralResponse } from '../types';
+import { GenerateReferralResponse, ReferralRecord } from '../types';
 
 interface GenerateReferralInput {
+  userId: string;
   companyName: string;
   jobId: string;
   jobDescription: string;
@@ -11,10 +12,30 @@ interface GenerateReferralInput {
   resumeFilePath: string;
 }
 
+const formatReferral = (referral: {
+  _id: unknown;
+  companyName: string;
+  jobId: string;
+  resumeLink: string;
+  generatedReferral: string;
+  generatedLinkedInRequest: string;
+  generatedSummary: string;
+  createdAt: Date;
+}): ReferralRecord => ({
+  id: String(referral._id),
+  companyName: referral.companyName,
+  jobId: referral.jobId,
+  resumeLink: referral.resumeLink,
+  referralMessage: referral.generatedReferral,
+  linkedinRequest: referral.generatedLinkedInRequest,
+  candidateSummary: referral.generatedSummary,
+  createdAt: referral.createdAt.toISOString(),
+});
+
 export const processReferralGeneration = async (
   input: GenerateReferralInput,
-): Promise<GenerateReferralResponse> => {
-  const { companyName, jobId, jobDescription, resumeLink, resumeFilePath } = input;
+): Promise<ReferralRecord> => {
+  const { userId, companyName, jobId, jobDescription, resumeLink, resumeFilePath } = input;
 
   let resumeText: string;
 
@@ -32,7 +53,8 @@ export const processReferralGeneration = async (
     resumeText,
   );
 
-  await Referral.create({
+  const referral = await Referral.create({
+    user: userId,
     companyName,
     jobId,
     resumeLink,
@@ -41,9 +63,13 @@ export const processReferralGeneration = async (
     generatedSummary: generated.candidateSummary,
   });
 
-  return {
-    referralMessage: generated.referralMessage,
-    linkedinRequest: generated.linkedinRequest,
-    candidateSummary: generated.candidateSummary,
-  };
+  return formatReferral(referral);
+};
+
+export const getReferralsByUser = async (userId: string): Promise<ReferralRecord[]> => {
+  const referrals = await Referral.find({ user: userId })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return referrals.map(formatReferral);
 };

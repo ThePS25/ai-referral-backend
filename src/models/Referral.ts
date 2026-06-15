@@ -1,6 +1,7 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export interface IReferral extends Document {
+  user: Types.ObjectId;
   companyName: string;
   jobId: string;
   resumeLink: string;
@@ -12,6 +13,7 @@ export interface IReferral extends Document {
 
 const referralSchema = new Schema<IReferral>(
   {
+    user: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     companyName: { type: String, required: true, trim: true },
     jobId: { type: String, required: true, trim: true },
     resumeLink: { type: String, required: true, trim: true },
