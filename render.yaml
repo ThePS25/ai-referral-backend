@@ -1,0 +1,15 @@
+# Render Web Service config (if deploying this folder as the repo root)
+# Dashboard settings should match:
+#   Root Directory: (leave empty if this IS the repo root)
+#   Build Command:  npm install && npm run build
+#   Start Command:   npm start
+
+services:
+  - type: web
+    name: ai-referral-backend
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
